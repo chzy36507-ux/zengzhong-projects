@@ -8,15 +8,39 @@ interface SupabaseCredentials {
   anonKey: string;
 }
 
+/** 与 Supabase 控制台 / Vercel / 云托管 常见命名兼容（不仅限 Coze 的 COZE_ 前缀） */
+function resolveSupabaseUrl(): string | undefined {
+  return (
+    process.env.COZE_SUPABASE_URL ||
+    process.env.SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL
+  );
+}
+
+function resolveSupabaseAnonKey(): string | undefined {
+  return (
+    process.env.COZE_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
+}
+
+function hasSupabaseEnvFromProcess(): boolean {
+  return Boolean(resolveSupabaseUrl() && resolveSupabaseAnonKey());
+}
+
 function loadEnv(): void {
-  if (envLoaded || (process.env.COZE_SUPABASE_URL && process.env.COZE_SUPABASE_ANON_KEY)) {
+  if (envLoaded || hasSupabaseEnvFromProcess()) {
+    if (hasSupabaseEnvFromProcess()) {
+      envLoaded = true;
+    }
     return;
   }
 
   try {
     try {
       require('dotenv').config();
-      if (process.env.COZE_SUPABASE_URL && process.env.COZE_SUPABASE_ANON_KEY) {
+      if (hasSupabaseEnvFromProcess()) {
         envLoaded = true;
         return;
       }
@@ -70,14 +94,18 @@ except Exception as e:
 function getSupabaseCredentials(): SupabaseCredentials {
   loadEnv();
 
-  const url = process.env.COZE_SUPABASE_URL;
-  const anonKey = process.env.COZE_SUPABASE_ANON_KEY;
+  const url = resolveSupabaseUrl();
+  const anonKey = resolveSupabaseAnonKey();
 
   if (!url) {
-    throw new Error('COZE_SUPABASE_URL is not set');
+    throw new Error(
+      'Supabase URL 未配置：请在运行环境中设置 COZE_SUPABASE_URL 或 SUPABASE_URL 或 NEXT_PUBLIC_SUPABASE_URL',
+    );
   }
   if (!anonKey) {
-    throw new Error('COZE_SUPABASE_ANON_KEY is not set');
+    throw new Error(
+      'Supabase Anon Key 未配置：请设置 COZE_SUPABASE_ANON_KEY 或 SUPABASE_ANON_KEY 或 NEXT_PUBLIC_SUPABASE_ANON_KEY',
+    );
   }
 
   return { url, anonKey };
@@ -85,7 +113,10 @@ function getSupabaseCredentials(): SupabaseCredentials {
 
 function getSupabaseServiceRoleKey(): string | undefined {
   loadEnv();
-  return process.env.COZE_SUPABASE_SERVICE_ROLE_KEY;
+  return (
+    process.env.COZE_SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
 }
 
 function getSupabaseClient(token?: string): SupabaseClient {
