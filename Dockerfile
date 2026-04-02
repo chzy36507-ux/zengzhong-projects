@@ -23,10 +23,11 @@ RUN pnpm build
 
 ENV NODE_ENV=production
 ENV COZE_PROJECT_ENV=PROD
-# 云托管一般注入 PORT；未设置时与本地脚本一致用 5000
-ENV PORT=5000
+# 云托管默认健康检查探测 80（见文档 Readiness probe）；与控制台「容器端口」须一致
+# 本地仍可用 scripts/start.sh（默认 5000）；Docker 内用 80 避免与探针端口不一致
+ENV PORT=80
 ENV HOSTNAME=0.0.0.0
 
-EXPOSE 5000
+EXPOSE 80
 
 CMD ["node", "dist/server.js"]
